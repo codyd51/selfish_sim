@@ -7,7 +7,7 @@
 
 using namespace std;
 
-#define NUM_PLAYERS 64
+#define NUM_PLAYERS 2
 
 enum PrisonerResponse : bool {
 	Defect = false,
@@ -42,7 +42,9 @@ public:
 
 	virtual PrisonerResponse prisoners_dilemna() = 0;
 	virtual void inform_outcome(GameOutcome outcome) {}
-	virtual void inform_new_opponent() {}
+	virtual void inform_new_opponent() {
+		score = 0;
+	}
 };
 
 class Samaritan : public Player {
@@ -191,26 +193,37 @@ bool score_sort(pair<string, unsigned> first, pair<string, unsigned> second) {
 	return false;
 }
 
-void score_display(Player* (&players)[NUM_PLAYERS]) {
+void score_display(/*Player* (&players)[NUM_PLAYERS]*/map<Player*, vector<unsigned> > scores) {
+	map<string, unsigned> sorted_average_scores;
+	for (map<Player*, vector<unsigned> >::iterator iter = scores.begin(); iter != scores.end(); iter++) {
+		Player* player = iter->first;
 
-	map<string, unsigned> scores;
-	for (unsigned i = 0; i < NUM_PLAYERS; i++) {
-		Player* player = players[i];
-		scores[player->type] += player->score;
+		//scoreboard name is type followed by id
+		ostringstream oss;
+		oss << player->type << " (" << player->name << ")";
 
-		//cout << player->type << " (" << player->name << "): " << player->score << endl;
+		//get average from all scores
+		float average = 0;
+		for (unsigned j = 0; j < iter->second.size(); j++) {
+			average += iter->second[j];
+		}
+		average /= iter->second.size();
+
+		sorted_average_scores[oss.str()] = average;
 	}
 
 	cout << "-------Scoreboard---------" << endl;
 	//sort scores by score values
-	vector<pair<string, unsigned> > pairs(scores.begin(), scores.end());
+	vector<pair<string, unsigned> > pairs(sorted_average_scores.begin(), sorted_average_scores.end());
 	sort(pairs.begin(), pairs.end(), &score_sort);
 	for (pair<string, unsigned> &pair : pairs) {
 		cout << pair.first << ": " << pair.second << endl;
 	}
 }
 
-void run_competition(Player* (&players)[NUM_PLAYERS]) {
+map<Player*, vector<unsigned> > run_competition(Player* (&players)[NUM_PLAYERS]) {
+	map<Player*, vector<unsigned> > scores;
+
 	//we keep track of what matches have already been made by maintaining a hash map of used matchups
 	//when a match is set, each opponent's id is used as a key to access a vector of past opponents
 	//if the current opponent exists in the list, the match is skipped
@@ -240,8 +253,13 @@ void run_competition(Player* (&players)[NUM_PLAYERS]) {
 			for (unsigned k = 0; k < 200; k++) {
 				play_game(players[i], players[j]);
 			}
+			
+			//insert scores into player history
+			scores[players[i]].push_back(players[i]->score);
+			scores[players[j]].push_back(players[j]->score);
 		}
 	}
+	return scores;
 }
 
 int main(void) {
@@ -254,17 +272,22 @@ int main(void) {
 	for (unsigned i = 0; i < NUM_PLAYERS; i++) {
 		switch (turn) {
 			case 0:
-				players[i] = new Player();
+				players[i] = new Fickle();
 				break;
 			case 1:
-				players[i] = new Samaritan();
+				players[i] = new Fickle();
 				break;
+				/*
 			case 2:
-				players[i] = new Villain();
+				players[i] = new TitForTat();
 				break;
 			case 3:
 				players[i] = new Grudger();
 				break;
+			case 2:
+				players[i] = new TitForTat();
+				break;
+				*/
 			default:
 				//reset turns and try again
 				turn = 0;
@@ -277,10 +300,10 @@ int main(void) {
 	}
 
 	//run competition, pitting each player against one another 200 times
-	run_competition(players);
+	map<Player*, vector<unsigned> > scores = run_competition(players);
 
-	//log current scores
-	score_display(players);
+	//sort players by average score and display them
+	score_display(scores);
 	
 	return 0;
 }
