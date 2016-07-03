@@ -46,6 +46,28 @@ public:
 	void inform_outcome(GameOutcome outcome) {}
 };
 
+class Samaritan : public Player {
+public:
+	Samaritan() {
+		type = "Samaritan";
+	}
+
+	PrisonerResponse prisoners_dilemna() {
+		return Cooperate;
+	}
+};
+
+class Villain : public Player {
+public:
+	Villain() {
+		type = "Villain";
+	}
+
+	PrisonerResponse prisoners_dilemna() {
+		return Defect;
+	}
+};
+
 class Grudger : public Player {
 private:
 	bool grudged = false;
@@ -86,27 +108,24 @@ void play_game(Player* me, Player* you) {
 	me->inform_outcome(outcome);
 	you->inform_outcome(outcome);
 
-	//if players cooperated, both get 1 point
+	//if players cooperated, both get 3 points
 	if (outcome == Friends) {
 		//cout << me->name << ", " << you->name << " cooperated." << endl;
-		me->score++;
-		you->score++;
+		me->score += 3;
+		you->score += 3;
 	}
 	else {
-		//if someone defected alone, they get 3 points
+		//if someone defected alone, they get 5 points
 		if (outcome == Sabotage && !me_coop) {
-			//cout << me->name << " sabotaged." << endl;
-			me->score += 3;
+			me->score += 5;
 		}
 		else if (outcome == Sabotage && !you_coop) {
-			//cout << you->name << " sabotaged." << endl;
-			you->score += 3;
+			you->score += 5;
 		}
-		//if both defected, they get punished 
+		//if both defected, they only get 1 point
 		else {
-			//cout << me->name << ", " << you->name << " both defected." << endl;
-			me->score--;
-			you->score--;
+			me->score++;
+			you->score++;
 		}
 	}
 			
@@ -146,14 +165,38 @@ void world_play(Player* (&players)[NUM_PLAYERS]) {
 }
 
 int main(void) {
+	srand(time(0));
+
 	Player* players[NUM_PLAYERS];
+
+	unsigned turn = 0;
 	//initialize players
 	for (unsigned i = 0; i < NUM_PLAYERS; i++) {
-		if (i % 2 == 0) players[i] = new Grudger();
-		else players[i] = new Player();
+		switch (turn) {
+			case 0:
+				players[i] = new Player();
+				break;
+			case 1:
+				players[i] = new Samaritan();
+				break;
+			case 2:
+				players[i] = new Villain();
+				break;
+			case 3:
+				players[i] = new Grudger();
+				break;
+			default:
+				//reset turns and try again
+				turn = 0;
+				i--;
+				continue;
+				break;
+
+		}
+		turn++;
 	}
 
-	for (unsigned i = 0; i < 1000; i++) {
+	for (unsigned i = 0; i < 10; i++) {
 		//run world for a lifetime
 		world_play(players);
 	}
