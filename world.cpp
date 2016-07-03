@@ -2,6 +2,8 @@
 #include <vector>
 #include <iostream>
 #include <sstream>
+#include <algorithm>
+#include <map>
 
 using namespace std;
 
@@ -86,23 +88,23 @@ void play_game(Player* me, Player* you) {
 
 	//if players cooperated, both get 1 point
 	if (outcome == Friends) {
-		cout << me->name << ", " << you->name << " cooperated." << endl;
+		//cout << me->name << ", " << you->name << " cooperated." << endl;
 		me->score++;
 		you->score++;
 	}
 	else {
 		//if someone defected alone, they get 3 points
 		if (outcome == Sabotage && !me_coop) {
-			cout << me->name << " sabotaged." << endl;
+			//cout << me->name << " sabotaged." << endl;
 			me->score += 3;
 		}
 		else if (outcome == Sabotage && !you_coop) {
-			cout << you->name << " sabotaged." << endl;
+			//cout << you->name << " sabotaged." << endl;
 			you->score += 3;
 		}
 		//if both defected, they get punished 
 		else {
-			cout << me->name << ", " << you->name << " both defected." << endl;
+			//cout << me->name << ", " << you->name << " both defected." << endl;
 			me->score--;
 			you->score--;
 		}
@@ -110,12 +112,27 @@ void play_game(Player* me, Player* you) {
 			
 }
 
+bool score_sort(pair<string, unsigned> first, pair<string, unsigned> second) {
+	if (first.second > second.second) return true;
+	return false;
+}
+
 void score_display(Player* (&players)[NUM_PLAYERS]) {
-	cout << "--------Scoreboard--------" << endl;
+
+	map<string, unsigned> scores;
 	for (unsigned i = 0; i < NUM_PLAYERS; i++) {
 		Player* player = players[i];
+		scores[player->type] += player->score;
 
-		cout << player->type << " (" << player->name << "): " << player->score << endl;
+		//cout << player->type << " (" << player->name << "): " << player->score << endl;
+	}
+
+	cout << "-------Scoreboard---------" << endl;
+	//sort scores by score values
+	vector<pair<string, unsigned> > pairs(scores.begin(), scores.end());
+	sort(pairs.begin(), pairs.end(), &score_sort);
+	for (pair<string, unsigned> &pair : pairs) {
+		cout << pair.first << ": " << pair.second << endl;
 	}
 }
 
@@ -136,7 +153,7 @@ int main(void) {
 		else players[i] = new Player();
 	}
 
-	for (unsigned i = 0; i < 1; i++) {
+	for (unsigned i = 0; i < 1000; i++) {
 		//run world for a lifetime
 		world_play(players);
 	}
