@@ -210,12 +210,37 @@ void score_display(Player* (&players)[NUM_PLAYERS]) {
 	}
 }
 
-void world_play(Player* (&players)[NUM_PLAYERS]) {
+void run_competition(Player* (&players)[NUM_PLAYERS]) {
+	//we keep track of what matches have already been made by maintaining a hash map of used matchups
+	//when a match is set, each opponent's id is used as a key to access a vector of past opponents
+	//if the current opponent exists in the list, the match is skipped
+	//else, the opponent's id is added to the list, and the match is ran 
+	map<unsigned, vector<unsigned> > matched;
+	
 	//run a life for every player and add to their cumulative score
-	for (unsigned i = 0; i < NUM_PLAYERS - 1; i+= 2) {
-		//TODO match players randomly, while only playing one player per turn
-		//let this player run a game
-		play_game(players[i], players[i+1]);
+	for (unsigned i = 0 ; i < NUM_PLAYERS; i++) {
+		//run each against each other player
+		for (int j = 0; j < NUM_PLAYERS; j++) {
+			//don't play against ourselves
+			//if (i == j) continue;
+			if (players[i]->name == players[j]->name) continue;
+
+			//check if this match has already been run
+			if (find(matched[i].begin(), matched[i].end(), j) != matched[i].end()) continue;
+			if (find(matched[j].begin(), matched[j].end(), i) != matched[j].end()) continue;
+
+			//record this match so we don't do it again
+			matched[i].push_back(j);
+			matched[j].push_back(i);
+
+			//tell each player they're about to play against a new opponent
+			players[i]->inform_new_opponent();
+			players[j]->inform_new_opponent();
+
+			for (unsigned k = 0; k < 200; k++) {
+				play_game(players[i], players[j]);
+			}
+		}
 	}
 }
 
@@ -251,10 +276,8 @@ int main(void) {
 		turn++;
 	}
 
-	for (unsigned i = 0; i < 10; i++) {
-		//run world for a lifetime
-		world_play(players);
-	}
+	//run competition, pitting each player against one another 200 times
+	run_competition(players);
 
 	//log current scores
 	score_display(players);
