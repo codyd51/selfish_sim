@@ -10,8 +10,8 @@ using namespace std;
 #define NUM_PLAYERS 64
 
 enum PrisonerResponse : bool {
-	Cooperate = true,
-	Defect = false
+	Defect = false,
+	Cooperate = true
 };
 
 enum GameOutcome : int {
@@ -34,16 +34,15 @@ public:
 		ostringstream oss;
 		oss << existing_player_count;
 		name = oss.str();
+
 		type = "Random";
 		
 		existing_player_count++;
 	}
 
-	PrisonerResponse prisoners_dilemna() {
-		return (PrisonerResponse)(rand() % 2);
-	}
-
-	void inform_outcome(GameOutcome outcome) {}
+	virtual PrisonerResponse prisoners_dilemna() = 0;
+	virtual void inform_outcome(GameOutcome outcome) {}
+	virtual void inform_new_opponent() {}
 };
 
 class Samaritan : public Player {
@@ -85,6 +84,66 @@ public:
 		//if the other player acted against us, hold a grudge
 		if (outcome != Friends) grudged = true;
 	}
+
+	void inform_new_opponent() {
+		grudged = false;
+	}
+};
+
+class TitForTat : public Player {
+private:
+	bool first_turn = true;
+	PrisonerResponse last_response;
+	PrisonerResponse last_play;
+public:
+	TitForTat() {
+		type = "TitForTat";
+	}
+
+	PrisonerResponse prisoners_dilemna() {
+		if (first_turn) {
+			first_turn = false;
+			return Cooperate;
+		}
+
+		//store what move we're about to make so we can figure out what happened
+		//when we're informed of the outcome
+		last_play = last_response;
+		return last_response;
+	}
+
+	void inform_outcome(GameOutcome outcome) {
+		if (outcome == Friends) last_response = Cooperate;
+		else if (outcome == Enemies) last_response = Defect;
+		else if (last_play == Cooperate) last_response = Defect;
+		else last_response = Cooperate;
+	}
+
+	void inform_new_opponent() {
+		first_turn = true;
+	}
+};
+
+class Fickle : public Player {
+private:
+	PrisonerResponse last;
+public:
+	Fickle() {
+		last = Defect;
+		type = "Fickle";
+	}
+
+	PrisonerResponse prisoners_dilemna() {
+		//flip-flop
+		//last = (PrisonerResponse)!last;
+		if (last == Cooperate) last = Defect;
+		else last = Cooperate;
+		return last;
+	}
+
+	void inform_new_opponent() {
+		last = Defect;
+	}
 };
 
 GameOutcome determine_outcome(bool me_coop, bool you_coop) {
@@ -102,33 +161,29 @@ void play_game(Player* me, Player* you) {
 
 	PrisonerResponse me_coop = me->prisoners_dilemna();
 	PrisonerResponse you_coop = you->prisoners_dilemna();
-	GameOutcome outcome = determine_outcome(me->prisoners_dilemna(), you->prisoners_dilemna());
-
-	//inform each player of game outcome
-	me->inform_outcome(outcome);
-	you->inform_outcome(outcome);
+	GameOutcome outcome = determine_outcome(me_coop, you_coop);
 
 	//if players cooperated, both get 3 points
 	if (outcome == Friends) {
-		//cout << me->name << ", " << you->name << " cooperated." << endl;
 		me->score += 3;
 		you->score += 3;
 	}
 	else {
-		//if someone defected alone, they get 5 points
 		if (outcome == Sabotage && !me_coop) {
 			me->score += 5;
 		}
 		else if (outcome == Sabotage && !you_coop) {
 			you->score += 5;
 		}
-		//if both defected, they only get 1 point
 		else {
 			me->score++;
 			you->score++;
 		}
 	}
 			
+	//inform each player of game outcome
+	me->inform_outcome(outcome);
+	you->inform_outcome(outcome);
 }
 
 bool score_sort(pair<string, unsigned> first, pair<string, unsigned> second) {
