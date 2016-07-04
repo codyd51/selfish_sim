@@ -26,6 +26,6 @@ As each matchup contains 200 games, there is a bounded range of possible scores 
 
 A typical tournament might result in something like this:
 
-
+![screenshot](./screenshot.PNG)
 
 GPL v3 license
