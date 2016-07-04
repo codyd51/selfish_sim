@@ -268,7 +268,7 @@ void score_display(map<Player*, vector<unsigned> > scores) {
 	}
 }
 
-map<Player*, vector<unsigned> > run_competition(Player* (&players)[NUM_PLAYERS]) {
+map<Player*, vector<unsigned> > tournament(Player* (&players)[NUM_PLAYERS]) {
 	map<Player*, vector<unsigned> > scores;
 
 	//we keep track of what matches have already been made by maintaining a hash map of used matchups
@@ -313,9 +313,8 @@ int main(void) {
 	srand(time(0));
 
 	Player* players[NUM_PLAYERS];
-
-	unsigned turn = 0;
 	//initialize players
+	unsigned turn = 0;
 	for (unsigned i = 0; i < NUM_PLAYERS; i++) {
 		switch (turn) {
 			case 0:
@@ -343,7 +342,8 @@ int main(void) {
 				players[i] = new ForgivingTitForTat();
 				break;
 			default:
-				//reset turns and try again
+				//couldn't find player type to use
+				//reset type selector and try again
 				turn = 0;
 				i--;
 				continue;
@@ -354,7 +354,7 @@ int main(void) {
 	}
 
 	//run competition, pitting each player against one another 200 times
-	map<Player*, vector<unsigned> > scores = run_competition(players);
+	map<Player*, vector<unsigned> > scores = tournament(players);
 
 	//sort players by average score and display them
 	score_display(scores);
