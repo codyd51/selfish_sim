@@ -7,7 +7,7 @@
 
 using namespace std;
 
-#define NUM_PLAYERS 6
+#define NUM_PLAYERS 8
 
 enum PrisonerResponse : bool {
 	Defect = false,
@@ -93,7 +93,7 @@ public:
 };
 
 class TitForTat : public Player {
-private:
+protected:
 	bool first_turn = true;
 	PrisonerResponse last_response;
 	PrisonerResponse last_play;
@@ -123,6 +123,53 @@ public:
 
 	void inform_new_opponent() {
 		first_turn = true;
+	}
+};
+
+class Joss : public TitForTat {
+public:
+	Joss() {
+		type = "Joss";
+	}
+
+	PrisonerResponse prisoners_dilemna() {
+		PrisonerResponse normal = TitForTat::prisoners_dilemna();
+		//10% chance of defecting
+		int chance = (int)(rand() * 10);
+		if (chance == 1) return Defect;
+		return normal;
+	}
+};
+
+class ForgivingTitForTat : public TitForTat {
+private:
+	bool first_defect = false;
+public:
+	ForgivingTitForTat() {
+		type = "ForgivingTitForTat";
+	}
+
+	PrisonerResponse prisoners_dilemna() {
+		if (first_turn) {
+			first_turn = false;
+			return Cooperate;
+		}
+		if (last_response == Defect) {
+			if (first_defect) {
+				last_play = Defect;
+				return last_play;
+			}
+			else {
+				first_defect = true;
+				return Cooperate;
+			}
+		}
+		first_defect = false;
+		return Cooperate;
+	}
+
+	void inform_new_opponent() {
+		first_defect = false;
 	}
 };
 
@@ -288,6 +335,12 @@ int main(void) {
 				break;
 			case 5:
 				players[i] = new Random();
+				break;
+			case 6:
+				players[i] = new Joss();
+				break;
+			case 7:
+				players[i] = new ForgivingTitForTat();
 				break;
 			default:
 				//reset turns and try again
