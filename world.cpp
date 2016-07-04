@@ -7,7 +7,7 @@
 
 using namespace std;
 
-#define NUM_PLAYERS 2
+#define NUM_PLAYERS 6
 
 enum PrisonerResponse : bool {
 	Defect = false,
@@ -137,14 +137,21 @@ public:
 
 	PrisonerResponse prisoners_dilemna() {
 		//flip-flop
-		//last = (PrisonerResponse)!last;
-		if (last == Cooperate) last = Defect;
-		else last = Cooperate;
+		last = (PrisonerResponse)!last;
 		return last;
 	}
 
 	void inform_new_opponent() {
 		last = Defect;
+	}
+};
+
+class Random : public Player {
+public:
+	Random() {}
+	
+	PrisonerResponse prisoners_dilemna() {
+		return (PrisonerResponse)(rand() % 2);
 	}
 };
 
@@ -193,8 +200,8 @@ bool score_sort(pair<string, unsigned> first, pair<string, unsigned> second) {
 	return false;
 }
 
-void score_display(/*Player* (&players)[NUM_PLAYERS]*/map<Player*, vector<unsigned> > scores) {
-	map<string, unsigned> sorted_average_scores;
+void score_display(map<Player*, vector<unsigned> > scores) {
+	map<string, float> sorted_average_scores;
 	for (map<Player*, vector<unsigned> >::iterator iter = scores.begin(); iter != scores.end(); iter++) {
 		Player* player = iter->first;
 
@@ -202,21 +209,14 @@ void score_display(/*Player* (&players)[NUM_PLAYERS]*/map<Player*, vector<unsign
 		ostringstream oss;
 		oss << player->type << " (" << player->name << ")";
 
-		//get average from all scores
-		float average = 0;
-		for (unsigned j = 0; j < iter->second.size(); j++) {
-			average += iter->second[j];
-		}
-		average /= iter->second.size();
-
-		sorted_average_scores[oss.str()] = average;
+		sorted_average_scores[oss.str()] = player->score / (float)iter->second.size();
 	}
 
 	cout << "-------Scoreboard---------" << endl;
 	//sort scores by score values
-	vector<pair<string, unsigned> > pairs(sorted_average_scores.begin(), sorted_average_scores.end());
+	vector<pair<string, float> > pairs(sorted_average_scores.begin(), sorted_average_scores.end());
 	sort(pairs.begin(), pairs.end(), &score_sort);
-	for (pair<string, unsigned> &pair : pairs) {
+	for (pair<string, float> &pair : pairs) {
 		cout << pair.first << ": " << pair.second << endl;
 	}
 }
@@ -272,22 +272,23 @@ int main(void) {
 	for (unsigned i = 0; i < NUM_PLAYERS; i++) {
 		switch (turn) {
 			case 0:
-				players[i] = new Fickle();
+				players[i] = new Samaritan();
 				break;
 			case 1:
-				players[i] = new Fickle();
+				players[i] = new Villain();
 				break;
-				/*
 			case 2:
-				players[i] = new TitForTat();
+				players[i] = new Fickle();
 				break;
 			case 3:
 				players[i] = new Grudger();
 				break;
-			case 2:
+			case 4:
 				players[i] = new TitForTat();
 				break;
-				*/
+			case 5:
+				players[i] = new Random();
+				break;
 			default:
 				//reset turns and try again
 				turn = 0;
